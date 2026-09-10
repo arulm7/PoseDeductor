@@ -306,6 +306,67 @@ fun CameraWorkoutScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Live AI Diagnostics: TFLite + Movement Rep Engine
+                if (uiState.predictedClass != null || uiState.landmarks.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Ink900.copy(alpha = 0.90f))
+                            .border(1.dp, Good400.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Exercise: ${uiState.exercise?.name ?: "Squats"}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White.copy(alpha = 0.8f)
+                                )
+                                Text(
+                                    text = "Reps: ${uiState.reps} / ${uiState.targetReps}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Good400
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Class: ${uiState.predictedClass ?: "detecting..."} (${"%.1f".format(uiState.predictedConfidence * 100)}%)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Good400
+                                )
+                                Text(
+                                    text = "State: ${uiState.repState}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Knee Angle: ${"%.1f".format(uiState.kneeAngle)}°",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.75f)
+                                )
+                                Text(
+                                    text = "Movement Δ: ${"%.1f".format(uiState.movementFromBaseline)}°",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.75f)
+                                )
+                            }
+                        }
+                    }
+                }
+
                 CoachCard(
                     state = uiState.state,
                     cue = uiState.cue,

@@ -18,5 +18,14 @@ data class CameraWorkoutUiState(
     val cue: String? = null,
     val isPaused: Boolean = false,
     val isSoundOn: Boolean = true,
-    val isComplete: Boolean = false
+    val isComplete: Boolean = false,
+    // Live TFLite Classifier Diagnostics
+    val predictedClass: String? = null,
+    val predictedConfidence: Float = 0f,
+    val secondBestClass: String? = null,
+    val secondBestConfidence: Float = 0f,
+    // Live Movement Engine Diagnostics
+    val kneeAngle: Float = 180f,
+    val movementFromBaseline: Float = 0f,
+    val repState: String = "WAITING_UP"
 )
