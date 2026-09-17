@@ -1,19 +1,27 @@
 package com.app.pose.domain.engine
 
 enum class RepMovementState(val label: String) {
-    WAITING_UP("Standing / Ready"),
-    DOWN_CANDIDATE("Initiating Movement"),
-    DOWN_CONFIRMED("Depth Confirmed"),
+    WAITING_FOR_UP("Standing / Waiting for UP"),
+    DOWN_CANDIDATE("Descending"),
+    VALID_DOWN("Valid Depth"),
     RETURNING_UP("Ascending"),
-    COOLDOWN("Rep Completed")
+    REP_COMPLETED("Rep Counted"),
+    COOLDOWN("Cooldown")
 }
 
 data class RepValidationResult(
-    val state: RepMovementState = RepMovementState.WAITING_UP,
+    val state: RepMovementState = RepMovementState.WAITING_FOR_UP,
     val repCount: Int = 0,
     val isRepCompleted: Boolean = false,
-    val primaryMetricValue: Float = 180f,     // e.g. current smoothed knee angle
-    val movementFromBaseline: Float = 0f,     // e.g. angle drop from standing baseline
-    val standingBaseline: Float = 175f,       // calibrated standing baseline
-    val feedbackCue: String? = null
+    val leftKneeAngle: Float = 180f,
+    val rightKneeAngle: Float = 180f,
+    val effectiveKneeAngle: Float = 180f,
+    val standingBaseline: Float = 175f,
+    val movementAmplitude: Float = 0f,
+    val feedbackCue: String? = null,
+    val hipDescent: Float = 0f,
+    val normalizedHipDescent: Float = 0f,
+    val legLength: Float = 0.5f,
+    val isBilateralValid: Boolean = true,
+    val isFeetGrounded: Boolean = true
 )

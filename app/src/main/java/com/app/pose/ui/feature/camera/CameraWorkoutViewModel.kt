@@ -60,9 +60,12 @@ class CameraWorkoutViewModel @JvmOverloads constructor(
                 predictedConfidence = 0f,
                 secondBestClass = null,
                 secondBestConfidence = 0f,
+                leftKneeAngle = 180f,
+                rightKneeAngle = 180f,
                 kneeAngle = 180f,
-                movementFromBaseline = 0f,
-                repState = "WAITING_UP"
+                standingBaseline = 175f,
+                movementAmplitude = 0f,
+                repState = "WAITING_FOR_UP"
             )
         }
         startTimer()
@@ -115,8 +118,8 @@ class CameraWorkoutViewModel @JvmOverloads constructor(
 
                     val derivedState = when {
                         isFinished -> CameraState.COMPLETE
-                        repResult.state == RepMovementState.DOWN_CONFIRMED -> CameraState.CORRECT
-                        repResult.state == RepMovementState.COOLDOWN -> CameraState.CORRECT
+                        repResult.state == RepMovementState.VALID_DOWN -> CameraState.CORRECT
+                        repResult.state == RepMovementState.REP_COMPLETED || repResult.state == RepMovementState.COOLDOWN -> CameraState.CORRECT
                         else -> CameraState.TRACKING
                     }
 
@@ -131,9 +134,15 @@ class CameraWorkoutViewModel @JvmOverloads constructor(
                         predictedConfidence = topConf,
                         secondBestClass = secondLabel,
                         secondBestConfidence = secondConf,
-                        kneeAngle = repResult.primaryMetricValue,
-                        movementFromBaseline = repResult.movementFromBaseline,
-                        repState = repResult.state.name
+                        leftKneeAngle = repResult.leftKneeAngle,
+                        rightKneeAngle = repResult.rightKneeAngle,
+                        kneeAngle = repResult.effectiveKneeAngle,
+                        standingBaseline = repResult.standingBaseline,
+                        movementAmplitude = repResult.movementAmplitude,
+                        repState = repResult.state.name,
+                        normalizedHipDescent = repResult.normalizedHipDescent,
+                        isFeetGrounded = repResult.isFeetGrounded,
+                        isBilateralValid = repResult.isBilateralValid
                     )
                 }
             } else {

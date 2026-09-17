@@ -24,8 +24,14 @@ data class CameraWorkoutUiState(
     val predictedConfidence: Float = 0f,
     val secondBestClass: String? = null,
     val secondBestConfidence: Float = 0f,
-    // Live Movement Engine Diagnostics
+    // Live Squat Movement Diagnostics
+    val leftKneeAngle: Float = 180f,
+    val rightKneeAngle: Float = 180f,
     val kneeAngle: Float = 180f,
-    val movementFromBaseline: Float = 0f,
-    val repState: String = "WAITING_UP"
+    val standingBaseline: Float = 175f,
+    val movementAmplitude: Float = 0f,
+    val repState: String = "WAITING_FOR_UP",
+    val normalizedHipDescent: Float = 0f,
+    val isFeetGrounded: Boolean = true,
+    val isBilateralValid: Boolean = true
 )

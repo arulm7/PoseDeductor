@@ -317,50 +317,54 @@ fun CameraWorkoutScreen(
                             .padding(horizontal = 16.dp, vertical = 10.dp)
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            // TFLite Telemetry
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Exercise: ${uiState.exercise?.name ?: "Squats"}",
+                                    text = "TFLite: ${uiState.predictedClass ?: "detecting..."}",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = Good400
+                                )
+                                Text(
+                                    text = "Conf: ${"%.1f".format(uiState.predictedConfidence * 100)}%",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White.copy(alpha = 0.8f)
+                                    color = Good400
+                                )
+                            }
+
+                            // Squat Movement Telemetry
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Knees: L ${"%.0f".format(uiState.leftKneeAngle)}° | R ${"%.0f".format(uiState.rightKneeAngle)}°",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.9f)
+                                )
+                                Text(
+                                    text = "Base: ${"%.0f".format(uiState.standingBaseline)}° | Δ: ${"%.0f".format(uiState.movementAmplitude)}°",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.9f)
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "State: ${uiState.repState} (Hip: ${"%.0f".format(uiState.normalizedHipDescent * 100)}%)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.75f)
                                 )
                                 Text(
                                     text = "Reps: ${uiState.reps} / ${uiState.targetReps}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Good400
-                                )
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "Class: ${uiState.predictedClass ?: "detecting..."} (${"%.1f".format(uiState.predictedConfidence * 100)}%)",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Good400
-                                )
-                                Text(
-                                    text = "State: ${uiState.repState}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White
-                                )
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "Knee Angle: ${"%.1f".format(uiState.kneeAngle)}°",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.75f)
-                                )
-                                Text(
-                                    text = "Movement Δ: ${"%.1f".format(uiState.movementFromBaseline)}°",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.75f)
                                 )
                             }
                         }
