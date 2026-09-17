@@ -18,5 +18,20 @@ data class CameraWorkoutUiState(
     val cue: String? = null,
     val isPaused: Boolean = false,
     val isSoundOn: Boolean = true,
-    val isComplete: Boolean = false
+    val isComplete: Boolean = false,
+    // Live TFLite Classifier Diagnostics
+    val predictedClass: String? = null,
+    val predictedConfidence: Float = 0f,
+    val secondBestClass: String? = null,
+    val secondBestConfidence: Float = 0f,
+    // Live Squat Movement Diagnostics
+    val leftKneeAngle: Float = 180f,
+    val rightKneeAngle: Float = 180f,
+    val kneeAngle: Float = 180f,
+    val standingBaseline: Float = 175f,
+    val movementAmplitude: Float = 0f,
+    val repState: String = "WAITING_FOR_UP",
+    val normalizedHipDescent: Float = 0f,
+    val isFeetGrounded: Boolean = true,
+    val isBilateralValid: Boolean = true
 )

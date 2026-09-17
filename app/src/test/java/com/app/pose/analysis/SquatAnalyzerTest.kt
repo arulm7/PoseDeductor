@@ -40,9 +40,37 @@ class SquatAnalyzerTest {
     }
 
     @Test
+    fun testOneKneeBendWhileOtherLegStraight_producesZeroReps() {
+        val standingPose = createMockSquatPose(leftKneeAngleDeg = 175f, rightKneeAngleDeg = 175f)
+        // User stands on right leg and bends left knee completely to 45 deg
+        val oneKneeBentPose = createMockSquatPose(leftKneeAngleDeg = 45f, rightKneeAngleDeg = 175f, hipDrop = 0.01f)
+
+        // Initialize standing
+        for (i in 1..6) {
+            analyzer.analyze(standingPose, i * 100L)
+        }
+
+        // Hold single knee bent
+        for (i in 7..20) {
+            analyzer.analyze(oneKneeBentPose, i * 100L)
+        }
+
+        // Return to standing
+        var result = analyzer.analyze(standingPose, 2100L)
+        for (i in 22..30) {
+            result = analyzer.analyze(standingPose, i * 100L)
+        }
+
+        // MUST be 0 reps!
+        assertEquals(0, result.repCount)
+        assertEquals(0, result.validRepCount)
+        assertEquals(SquatPhase.STANDING, result.phase)
+    }
+
+    @Test
     fun testSmallKneeMovement_doesNotIncrementRep() {
-        val standingPose = createMockSquatPose(kneeAngleDeg = 175f)
-        val slightMovePose = createMockSquatPose(kneeAngleDeg = 148f) // Small movement > 140 threshold
+        val standingPose = createMockSquatPose(leftKneeAngleDeg = 175f, rightKneeAngleDeg = 175f)
+        val slightMovePose = createMockSquatPose(leftKneeAngleDeg = 148f, rightKneeAngleDeg = 148f, hipDrop = 0.02f)
 
         // Initialize standing
         for (i in 1..6) {
@@ -66,8 +94,8 @@ class SquatAnalyzerTest {
 
     @Test
     fun testPartialKneeBend_doesNotIncrementRep() {
-        val standingPose = createMockSquatPose(kneeAngleDeg = 175f)
-        val partialBendPose = createMockSquatPose(kneeAngleDeg = 125f) // Bends but doesn't reach <= 105 bottom
+        val standingPose = createMockSquatPose(leftKneeAngleDeg = 175f, rightKneeAngleDeg = 175f)
+        val partialBendPose = createMockSquatPose(leftKneeAngleDeg = 125f, rightKneeAngleDeg = 125f, hipDrop = 0.04f)
 
         // Initialize standing
         for (i in 1..6) {
@@ -91,10 +119,10 @@ class SquatAnalyzerTest {
 
     @Test
     fun testValidSquatCycle_completesExactlyOneRep() {
-        val standingPose = createMockSquatPose(kneeAngleDeg = 175f)
-        val descendingPose = createMockSquatPose(kneeAngleDeg = 130f)
-        val bottomPose = createMockSquatPose(kneeAngleDeg = 88f)
-        val ascendingPose = createMockSquatPose(kneeAngleDeg = 135f)
+        val standingPose = createMockSquatPose(leftKneeAngleDeg = 175f, rightKneeAngleDeg = 175f, hipDrop = 0f)
+        val descendingPose = createMockSquatPose(leftKneeAngleDeg = 130f, rightKneeAngleDeg = 130f, hipDrop = 0.06f)
+        val bottomPose = createMockSquatPose(leftKneeAngleDeg = 88f, rightKneeAngleDeg = 88f, hipDrop = 0.15f)
+        val ascendingPose = createMockSquatPose(leftKneeAngleDeg = 135f, rightKneeAngleDeg = 135f, hipDrop = 0.06f)
 
         // 1. Standing
         var result = analyzer.analyze(standingPose, 0L)
@@ -137,9 +165,9 @@ class SquatAnalyzerTest {
 
     @Test
     fun testSquatHeldAtBottom_doesNotIncrementAdditionalReps() {
-        val standingPose = createMockSquatPose(kneeAngleDeg = 175f)
-        val descendingPose = createMockSquatPose(kneeAngleDeg = 130f)
-        val bottomPose = createMockSquatPose(kneeAngleDeg = 85f)
+        val standingPose = createMockSquatPose(leftKneeAngleDeg = 175f, rightKneeAngleDeg = 175f, hipDrop = 0f)
+        val descendingPose = createMockSquatPose(leftKneeAngleDeg = 130f, rightKneeAngleDeg = 130f, hipDrop = 0.06f)
+        val bottomPose = createMockSquatPose(leftKneeAngleDeg = 85f, rightKneeAngleDeg = 85f, hipDrop = 0.15f)
 
         for (i in 1..6) {
             analyzer.analyze(standingPose, i * 100L)
@@ -160,10 +188,10 @@ class SquatAnalyzerTest {
 
     @Test
     fun testTwoCompleteSquats_incrementsExactlyTwoReps() {
-        val standingPose = createMockSquatPose(kneeAngleDeg = 175f)
-        val descendingPose = createMockSquatPose(kneeAngleDeg = 130f)
-        val bottomPose = createMockSquatPose(kneeAngleDeg = 88f)
-        val ascendingPose = createMockSquatPose(kneeAngleDeg = 135f)
+        val standingPose = createMockSquatPose(leftKneeAngleDeg = 175f, rightKneeAngleDeg = 175f, hipDrop = 0f)
+        val descendingPose = createMockSquatPose(leftKneeAngleDeg = 130f, rightKneeAngleDeg = 130f, hipDrop = 0.06f)
+        val bottomPose = createMockSquatPose(leftKneeAngleDeg = 88f, rightKneeAngleDeg = 88f, hipDrop = 0.15f)
+        val ascendingPose = createMockSquatPose(leftKneeAngleDeg = 135f, rightKneeAngleDeg = 135f, hipDrop = 0.06f)
 
         // Rep 1
         for (i in 1..5) analyzer.analyze(standingPose, i * 100L)
@@ -187,9 +215,9 @@ class SquatAnalyzerTest {
 
     @Test
     fun testLandmarkLossDuringMovement_doesNotCreateRep() {
-        val standingPose = createMockSquatPose(kneeAngleDeg = 175f)
-        val descendingPose = createMockSquatPose(kneeAngleDeg = 130f)
-        val bottomPose = createMockSquatPose(kneeAngleDeg = 88f)
+        val standingPose = createMockSquatPose(leftKneeAngleDeg = 175f, rightKneeAngleDeg = 175f, hipDrop = 0f)
+        val descendingPose = createMockSquatPose(leftKneeAngleDeg = 130f, rightKneeAngleDeg = 130f, hipDrop = 0.06f)
+        val bottomPose = createMockSquatPose(leftKneeAngleDeg = 88f, rightKneeAngleDeg = 88f, hipDrop = 0.15f)
         val occludedPose = MutableList(33) { PosePoint(0.5f, 0.5f, 0f, 0.1f) }
 
         for (i in 1..5) analyzer.analyze(standingPose, i * 100L)
@@ -210,33 +238,44 @@ class SquatAnalyzerTest {
         assertEquals(0, result.repCount)
     }
 
-    private fun createMockSquatPose(kneeAngleDeg: Float): List<PosePoint> {
+    private fun createMockSquatPose(
+        leftKneeAngleDeg: Float = 175f,
+        rightKneeAngleDeg: Float = 175f,
+        hipDrop: Float = 0f
+    ): List<PosePoint> {
         val list = MutableList(33) { PosePoint(0.5f, 0.5f, 0f, 0.95f) }
 
-        // Hip at (0.5, 0.2)
-        val hipX = 0.5f
-        val hipY = 0.2f
-        list[23] = PosePoint(hipX, hipY, 0f, 0.95f)
-        list[24] = PosePoint(hipX, hipY, 0f, 0.95f)
+        // Hip base Y at 0.2 + hipDrop
+        val hipXLeft = 0.45f
+        val hipXRight = 0.55f
+        val hipY = 0.2f + hipDrop
+        list[23] = PosePoint(hipXLeft, hipY, 0f, 0.95f)
+        list[24] = PosePoint(hipXRight, hipY, 0f, 0.95f)
 
-        // Ankle at (0.5, 0.8)
-        val ankleX = 0.5f
+        // Ankle at (0.45, 0.8) and (0.55, 0.8)
         val ankleY = 0.8f
-        list[27] = PosePoint(ankleX, ankleY, 0f, 0.95f)
-        list[28] = PosePoint(ankleX, ankleY, 0f, 0.95f)
+        list[27] = PosePoint(hipXLeft, ankleY, 0f, 0.95f)
+        list[28] = PosePoint(hipXRight, ankleY, 0f, 0.95f)
 
-        // Angle theta formula: offset = (0.3) * tan((180 - theta) / 2)
-        val clampedAngle = kneeAngleDeg.coerceIn(45f, 180f)
-        val halfComplementRad = Math.toRadians(((180.0 - clampedAngle) / 2.0))
-        val kneeY = 0.5f
-        val kneeOffset = (0.3 * Math.tan(halfComplementRad)).toFloat()
+        // Knee positions calculated from angles
+        val kneeY = (hipY + ankleY) / 2f
+        val legSpanHalf = (ankleY - hipY) / 2f
 
-        list[25] = PosePoint(hipX - kneeOffset, kneeY, 0f, 0.95f)
-        list[26] = PosePoint(hipX - kneeOffset, kneeY, 0f, 0.95f)
+        val clampedLeft = leftKneeAngleDeg.coerceIn(45f, 180f)
+        val leftHalfRad = Math.toRadians(((180.0 - clampedLeft) / 2.0))
+        val leftOffset = (legSpanHalf * Math.tan(leftHalfRad)).toFloat()
+
+        val clampedRight = rightKneeAngleDeg.coerceIn(45f, 180f)
+        val rightHalfRad = Math.toRadians(((180.0 - clampedRight) / 2.0))
+        val rightOffset = (legSpanHalf * Math.tan(rightHalfRad)).toFloat()
+
+        list[25] = PosePoint(hipXLeft - leftOffset, kneeY, 0f, 0.95f)
+        list[26] = PosePoint(hipXRight - rightOffset, kneeY, 0f, 0.95f)
 
         // Shoulders
-        list[11] = PosePoint(0.45f, 0.1f, 0f, 0.95f)
-        list[12] = PosePoint(0.55f, 0.1f, 0f, 0.95f)
+        val shoulderY = hipY - 0.1f
+        list[11] = PosePoint(0.45f, shoulderY, 0f, 0.95f)
+        list[12] = PosePoint(0.55f, shoulderY, 0f, 0.95f)
 
         return list
     }

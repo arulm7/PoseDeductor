@@ -1,14 +1,18 @@
 package com.app.pose.ui.feature.camera
 
+import android.app.Application
 import androidx.camera.core.ImageProxy
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.pose.camera.PoseLandmarkerHelper
 import com.app.pose.data.ExerciseRepository
 import com.app.pose.data.ProgressRepository
-import com.app.pose.domain.analysis.SquatAnalysisResult
-import com.app.pose.domain.analysis.SquatAnalyzer
-import com.app.pose.domain.analysis.SquatPhase
+import com.app.pose.domain.classifier.ExerciseClassifier
+import com.app.pose.domain.classifier.PoseClassificationResult
+import com.app.pose.domain.engine.ExerciseRepValidator
+import com.app.pose.domain.engine.RepMovementState
+import com.app.pose.domain.engine.RepValidationResult
+import com.app.pose.domain.engine.RepValidatorFactory
 import com.app.pose.domain.model.CameraState
 import com.app.pose.domain.model.PosePoint
 import com.app.pose.domain.model.WorkoutResult
@@ -20,21 +24,24 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class CameraWorkoutViewModel(
+class CameraWorkoutViewModel @JvmOverloads constructor(
+    application: Application,
     private val exerciseRepository: ExerciseRepository = ExerciseRepository(),
     private val progressRepository: ProgressRepository = ProgressRepository()
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(CameraWorkoutUiState())
     val uiState: StateFlow<CameraWorkoutUiState> = _uiState.asStateFlow()
 
-    private val squatAnalyzer = SquatAnalyzer()
+    private val exerciseClassifier = ExerciseClassifier(application)
+    private var repValidator: ExerciseRepValidator = RepValidatorFactory.createValidator("squat")
     private var timerJob: Job? = null
 
     fun initializeSession(exerciseId: String) {
         val exercise = exerciseRepository.getExerciseById(exerciseId)
         val target = exercise?.targetReps ?: 12
-        squatAnalyzer.reset()
+        repValidator = RepValidatorFactory.createValidator(exerciseId)
+        repValidator.reset()
 
         _uiState.update {
             it.copy(
@@ -48,7 +55,17 @@ class CameraWorkoutViewModel(
                 elapsedSeconds = 0,
                 cue = "Position yourself in frame",
                 isPaused = false,
-                isComplete = false
+                isComplete = false,
+                predictedClass = null,
+                predictedConfidence = 0f,
+                secondBestClass = null,
+                secondBestConfidence = 0f,
+                leftKneeAngle = 180f,
+                rightKneeAngle = 180f,
+                kneeAngle = 180f,
+                standingBaseline = 175f,
+                movementAmplitude = 0f,
+                repState = "WAITING_FOR_UP"
             )
         }
         startTimer()
@@ -84,32 +101,52 @@ class CameraWorkoutViewModel(
 
     fun onPoseLandmarksDetected(landmarks: List<PosePoint>, timestampMs: Long = System.currentTimeMillis()) {
         viewModelScope.launch {
-            _uiState.update { current ->
-                if (landmarks.isNotEmpty()) {
-                    val analysis: SquatAnalysisResult = squatAnalyzer.analyze(landmarks, timestampMs)
-                    val target = current.targetReps
+            if (landmarks.isNotEmpty() && landmarks.size >= 33) {
+                // 1. TFLite classification (runs in background coroutine)
+                val classification: PoseClassificationResult? = exerciseClassifier.classify(landmarks)
 
-                    val isFinished = analysis.repCount >= target
+                // 2. Movement Rep Engine validation
+                val repResult: RepValidationResult = repValidator.processFrame(landmarks, classification, timestampMs)
+
+                _uiState.update { current ->
+                    val topLabel = classification?.topClass?.label
+                    val topConf = classification?.topConfidence ?: 0f
+                    val secondLabel = classification?.secondClass?.label
+                    val secondConf = classification?.secondConfidence ?: 0f
+
+                    val isFinished = repResult.repCount >= current.targetReps
 
                     val derivedState = when {
                         isFinished -> CameraState.COMPLETE
-                        !analysis.isStartingPositionValid -> CameraState.READY
-                        analysis.isRepCompleted && !analysis.isRepValid -> CameraState.INCORRECT
-                        analysis.isRepCompleted && analysis.isRepValid -> CameraState.CORRECT
-                        analysis.phase == SquatPhase.BOTTOM -> CameraState.CORRECT
+                        repResult.state == RepMovementState.VALID_DOWN -> CameraState.CORRECT
+                        repResult.state == RepMovementState.REP_COMPLETED || repResult.state == RepMovementState.COOLDOWN -> CameraState.CORRECT
                         else -> CameraState.TRACKING
                     }
 
                     current.copy(
                         landmarks = landmarks,
                         state = derivedState,
-                        reps = analysis.repCount,
-                        correctReps = analysis.validRepCount,
-                        formScore = analysis.formScore,
-                        cue = analysis.feedbackCue ?: current.cue,
-                        isComplete = isFinished
+                        reps = repResult.repCount,
+                        correctReps = repResult.repCount,
+                        cue = repResult.feedbackCue ?: current.cue,
+                        isComplete = isFinished,
+                        predictedClass = topLabel,
+                        predictedConfidence = topConf,
+                        secondBestClass = secondLabel,
+                        secondBestConfidence = secondConf,
+                        leftKneeAngle = repResult.leftKneeAngle,
+                        rightKneeAngle = repResult.rightKneeAngle,
+                        kneeAngle = repResult.effectiveKneeAngle,
+                        standingBaseline = repResult.standingBaseline,
+                        movementAmplitude = repResult.movementAmplitude,
+                        repState = repResult.state.name,
+                        normalizedHipDescent = repResult.normalizedHipDescent,
+                        isFeetGrounded = repResult.isFeetGrounded,
+                        isBilateralValid = repResult.isBilateralValid
                     )
-                } else {
+                }
+            } else {
+                _uiState.update { current ->
                     val derivedState = if (current.state == CameraState.TRACKING || current.state == CameraState.CORRECT) {
                         CameraState.LOST
                     } else {
@@ -150,7 +187,7 @@ class CameraWorkoutViewModel(
             correctReps = correct,
             formScore = score,
             durationSec = state.elapsedSeconds.coerceAtLeast(10),
-            focus = ex?.cues?.firstOrNull() ?: "Keep your knees aligned"
+            focus = ex?.cues?.firstOrNull() ?: "Maintain good posture"
         )
         progressRepository.recordWorkoutResult(result)
         return result
@@ -159,5 +196,6 @@ class CameraWorkoutViewModel(
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()
+        exerciseClassifier.close()
     }
 }
