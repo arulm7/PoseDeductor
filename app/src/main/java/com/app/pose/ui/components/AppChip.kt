@@ -51,7 +51,8 @@ fun AppChip(
     modifier: Modifier = Modifier,
     tone: ChipTone = ChipTone.DEFAULT,
     icon: ImageVector? = null,
-    iconEmoji: String? = null
+    iconEmoji: String? = null,
+    iconNew: String? = null
 ) {
     val (bgColor, textColor, borderColor) = when (tone) {
         ChipTone.DEFAULT -> Triple(CanvasBg(), Ink600, LineBorder.copy(alpha = 0.6f))
